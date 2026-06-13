@@ -1,0 +1,43 @@
+# version: '3.8'
+
+services:
+  web-prod:
+    image: nginx:alpine
+    container_name: web-belajar-docker
+    restart: unless-stopped
+    ports:
+      - "443:80"
+
+    # dns:
+    #   - 8.8.8.8
+    #   - 1.1.1.1
+    
+    # [A] ALOKASI VOLUME (Read-Only untuk keamanan)
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+
+
+    # [B] ALOKASI CPU & RAM (Membatasi Noisy Neighbor)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'     # Maksimal 0.5 Core
+          memory: 256M     # Maksimal 256MB RAM
+        reservations:
+          memory: 128M     # Garansi awal 128MB RAM
+
+    # [C] ALOKASI NETWORK (Menghubungkan ke VLAN khusus)
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.10 # Mengunci IP Statis untuk container ini
+
+# DEFINISI TOPOLOGI JARINGAN SECARA DETAIL
+networks:
+  vlan-internal:
+    driver: bridge
+    # driver_opts:
+    #   parent: eth0
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.1

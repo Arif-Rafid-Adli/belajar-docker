@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Lab Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <header class="bg-blue-600 p-6 shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold">🚀 Docker Learning Playground</h1>
+            <p class="text-blue-200 text-sm mt-1">Sistem ini berjalan 100% di dalam Container Nginx</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto my-8 px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+            <h2 class="text-xl font-bold text-blue-400 mb-4">🌐 Jaringan Docker (Network Engineer Tools)</h2>
+            <div class="space-y-3">
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker network ls</code>
+                    <p class="text-gray-400 text-xs mt-1">Melihat semua virtual switch/vlan yang ada di Docker.</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker network inspect [nama]</code>
+                    <p class="text-gray-400 text-xs mt-1">Melihat detail IP Allocation dan host yang terhubung ke jaringan.</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker exec -it [container] ping [nama-container-lain]</code>
+                    <p class="text-gray-400 text-xs mt-1">Menguji DNS resolution internal Docker antar-container.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+            <h2 class="text-xl font-bold text-green-400 mb-4">🛠️ Perintah Dasar Manajemen</h2>
+            <div class="space-y-3">
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker ps -a</code>
+                    <p class="text-gray-400 text-xs mt-1">Melihat status semua container (Up/Down/Exited).</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker logs -f [nama-container]</code>
+                    <p class="text-gray-400 text-xs mt-1">Melihat log trafik atau error secara real-time (seperti 'terminal monitor' di Cisco).</p>
+                </div>
+                <div class="bg-gray-950 p-3 rounded">
+                    <code class="text-yellow-400">docker compose down</code>
+                    <p class="text-gray-400 text-xs mt-1">Menghapus seluruh topologi lab tanpa menyisakan sampah konfigurasi.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 md:col-span-2">
+            <h2 class="text-xl font-bold text-purple-400 mb-4">🔍 Checklist Troubleshooting (Golden Rules)</h2>
+            <ul class="list-disc pl-5 space-y-2 text-gray-300">
+                <li><strong class="text-white">Halaman Welcome Nginx Muncul?</strong> Berarti volume mounting file <code class="bg-gray-900 px-1 text-red-400">nginx.conf</code> salah arah atau tidak terbaca.</li>
+                <li><strong class="text-white">Error Port Already Allocated?</strong> Port di laptop Anda (misal 8080 atau 80) sedang dipakai aplikasi lain. Ganti angka di sebelah kiri parameter port (<code class="bg-gray-900 px-1 text-red-400">"8081:80"</code>).</li>
+                <li><strong class="text-white">Container Tidak Bisa Saling Ping?</strong> Pastikan kedua container berada di bawah blok <code class="bg-gray-900 px-1 text-red-400">networks:</code> yang sama di Docker Compose.</li>
+            </ul>
+        </div>
+    </main>
+
+    <footer class="text-center text-gray-500 text-xs my-8">
+        Docker Lab Dashboard © 2026 - Dikembangkan secara lokal.
+    </footer>
+
+</body>
+</html>
