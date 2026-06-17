@@ -1,43 +1,77 @@
 # version: '3.8'
 
-services:
-  web-prod:
+services: # ◀️ Mentok kiri (0 spasi)
+  web-prod: # ◀️ Maju 2 spasi
     image: nginx:alpine
     container_name: web-belajar-docker
     restart: unless-stopped
     ports:
       - "443:80"
-
-    # dns:
-    #   - 8.8.8.8
-    #   - 1.1.1.1
-    
-    # [A] ALOKASI VOLUME (Read-Only untuk keamanan)
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
-
-
-    # [B] ALOKASI CPU & RAM (Membatasi Noisy Neighbor)
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     deploy:
       resources:
         limits:
-          cpus: '0.50'     # Maksimal 0.5 Core
-          memory: 256M     # Maksimal 256MB RAM
-        reservations:
-          memory: 128M     # Garansi awal 128MB RAM
-
-    # [C] ALOKASI NETWORK (Menghubungkan ke VLAN khusus)
+          cpus: '0.50'
+          memory: 256M
     networks:
       vlan-internal:
-        ipv4_address: 10.10.10.10 # Mengunci IP Statis untuk container ini
+        ipv4_address: 10.10.10.10
 
-# DEFINISI TOPOLOGI JARINGAN SECARA DETAIL
-networks:
+  app-prod: # ◀️ Maju 2 spasi
+    image: node:20-alpine
+    container_name: backend-express-docker
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "npm install && node server.js"
+    environment:
+      DB_HOST: 10.10.10.20
+      DB_USER: admin_web
+      DB_PASSWORD: PasswordAdminWeb456
+      DB_NAME: db_dashboard
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.30
+
+  db-prod: # ◀️ Maju 2 spasi
+    image: mariadb:10.11
+    container_name: database-user-docker
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 'PasswordSuperRahasia123'
+      MYSQL_DATABASE: 'db_dashboard'
+      MYSQL_USER: 'admin_web'
+      MYSQL_PASSWORD: 'PasswordAdminWeb456'
+    volumes:
+      - db_data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.20
+
+# =========================================================
+#  BAGIAN DI BAWAH INI WAJIB MENTOK KIRI (0 SPASI)
+# =========================================================
+
+networks: # ◀️ Pastikan mentok ke kiri sejajar dengan "services:" di atas!
   vlan-internal:
     driver: bridge
-    # driver_opts:
-    #   parent: eth0
     ipam:
       config:
         - subnet: 10.10.10.0/24
           gateway: 10.10.10.1
+
+volumes: # ◀️ Pastikan mentok ke kiri juga!
+  db_data:
