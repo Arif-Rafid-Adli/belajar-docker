@@ -1,77 +1,120 @@
-# version: '3.8'
+version: '3.8'
 
-services: # ◀️ Mentok kiri (0 spasi)
-  web-prod: # ◀️ Maju 2 spasi
+services:
+  # 1. WEB SERVER (Nginx)
+  web:
     image: nginx:alpine
     container_name: web-belajar-docker
     restart: unless-stopped
     ports:
-      - "443:80"
+      - "80:80"
     volumes:
-      - ./index.html:/usr/share/nginx/html/index.html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 256M
+      - ./html:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       vlan-internal:
         ipv4_address: 10.10.10.10
-
-  app-prod: # ◀️ Maju 2 spasi
-    image: node:20-alpine
-    container_name: backend-express-docker
-    restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: sh -c "npm install && node server.js"
-    environment:
-      DB_HOST: 10.10.10.20
-      DB_USER: admin_web
-      DB_PASSWORD: PasswordAdminWeb456
-      DB_NAME: db_dashboard
     deploy:
       resources:
         limits:
           cpus: '0.50'
           memory: 256M
-    networks:
-      vlan-internal:
-        ipv4_address: 10.10.10.30
 
-  db-prod: # ◀️ Maju 2 spasi
-    image: mariadb:10.11
-    container_name: database-user-docker
+  # 2. DATABASE SERVER (MariaDB)
+  database:
+    image: mariadb:10
+    container_name: database-user
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 'PasswordSuperRahasia123'
-      MYSQL_DATABASE: 'db_dashboard'
-      MYSQL_USER: 'admin_web'
-      MYSQL_PASSWORD: 'PasswordAdminWeb456'
-    volumes:
-      - db_data:/var/lib/mysql
+      MARIADB_ROOT_PASSWORD: RootPasswordSuperSec123
+      MARIADB_DATABASE: db_dashboard
+      MARIADB_USER: admin_web
+      MARIADB_PASSWORD: PasswordAdminWeb456
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.20
     deploy:
       resources:
         limits:
           cpus: '0.50'
           memory: 512M
+
+  # 3. BACKEND API SERVER (Node.js)
+  backend:
+    image: node:20-alpine
+    container_name: backend-express
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "npm install && npm start"
+    dns:
+      - 10.10.10.50
+    environment:
+      - DB_HOST=10.10.10.20
+      - DB_USER=admin_web
+      - DB_PASS=PasswordAdminWeb456
+      - DB_NAME=db_dashboard
     networks:
       vlan-internal:
-        ipv4_address: 10.10.10.20
+        ipv4_address: 10.10.10.30
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
 
-# =========================================================
-#  BAGIAN DI BAWAH INI WAJIB MENTOK KIRI (0 SPASI)
-# =========================================================
+  # 4. SSH BASTION / JUMP HOST (Kembali Hadir)
+  ssh-bastion:
+    image: alpine:latest
+    container_name: ssh-bastion-docker
+    restart: unless-stopped
+    ports:
+      - "2222:22"
+    dns:
+      - 10.10.10.50 # Diarahkan ke DNS lokal agar bisa mengenali nama domain
+    command: >
+      sh -c "sleep 3 &&
+             apk add --no-cache openssh curl mysql-client bind-tools &&
+             ssh-keygen -A &&
+             mkdir -p /var/run/sshd &&
+             (id netadmin >/dev/null 2>&1 || adduser -D netadmin) &&
+             echo 'netadmin:PasswordNetadmin123' | chpasswd &&
+             /usr/sbin/sshd -D -o PasswordAuthentication=yes -o KbdInteractiveAuthentication=yes"
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.40
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 128M
 
-networks: # ◀️ Pastikan mentok ke kiri sejajar dengan "services:" di atas!
+  # 5. DNS SERVER LOCAL (Fixed Path /etc/)
+  dns-server:
+    image: alpine:latest
+    container_name: dns-server-docker
+    restart: unless-stopped
+    ports:
+      - "53:53/udp"
+    command: >
+      sh -c "apk add --no-cache dnsmasq &&
+             echo 'user=root' > /etc/dnsmasq.conf &&
+             echo 'address=/website-lab.local/10.10.10.10' >> /etc/dnsmasq.conf &&
+             echo 'server=8.8.8.8' >> /etc/dnsmasq.conf &&
+             dnsmasq -k"
+    networks:
+      vlan-internal:
+        ipv4_address: 10.10.10.50
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 64M
+
+networks:
   vlan-internal:
     driver: bridge
     ipam:
       config:
         - subnet: 10.10.10.0/24
-          gateway: 10.10.10.1
-
-volumes: # ◀️ Pastikan mentok ke kiri juga!
-  db_data:
